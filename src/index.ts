@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.routes';
+import installmentRoutes from './routes/installment.routes';
 import cors from 'cors';
 import connectDB from './config/db';
 
@@ -16,6 +17,7 @@ app.get('/', (req, res) => {
   res.send('PayFlow API is running!');
 });
 app.use('/api/auth', authRoutes);
+app.use('/api/installments', installmentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
