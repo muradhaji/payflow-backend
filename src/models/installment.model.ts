@@ -1,10 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMonthlyPayment {
+  _id?: mongoose.Types.ObjectId;
   date: Date;
   amount: number;
   paid: boolean;
-  paidDate: Date;
+  paidDate: Date | null;
 }
 
 export interface IInstallment extends Document {
@@ -18,15 +19,12 @@ export interface IInstallment extends Document {
   updatedAt: Date;
 }
 
-const monthlyPaymentSchema = new Schema<IMonthlyPayment>(
-  {
-    date: { type: Date, required: true },
-    amount: { type: Number, required: true },
-    paid: { type: Boolean, default: false },
-    paidDate: { type: Date, default: null },
-  },
-  { _id: false }
-);
+const monthlyPaymentSchema = new Schema<IMonthlyPayment>({
+  date: { type: Date, required: true },
+  amount: { type: Number, required: true },
+  paid: { type: Boolean, default: false },
+  paidDate: { type: Date, default: null },
+});
 
 const installmentSchema = new Schema<IInstallment>(
   {
