@@ -1,15 +1,103 @@
 import { Request, Response } from 'express';
 import { Installment } from '../models/installment.model';
 
+// export const createInstallment = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const { title, amount, monthCount, startMonth, monthlyPayments } = req.body;
+
+//     if (!title || !amount || !monthCount || !startMonth || !monthlyPayments) {
+//       res.status(400).json({ message: 'All fields are required' });
+//       return;
+//     }
+
+//     const installment = await Installment.create({
+//       user: req.user!._id,
+//       title,
+//       amount,
+//       monthCount,
+//       startMonth,
+//       monthlyPayments,
+//     });
+
+//     res.status(201).json(installment);
+//   } catch (error) {
+//     console.error('Create installment error:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// };
+
 export const createInstallment = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { title, amount, monthCount, startMonth, monthlyPayments } = req.body;
+    const { title, amount, monthCount, startDate, monthlyPayments } = req.body;
 
-    if (!title || !amount || !monthCount || !startMonth || !monthlyPayments) {
-      res.status(400).json({ message: 'All fields are required' });
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      res
+        .status(400)
+        .json({ message: 'Title is required and must be a non-empty string.' });
+      return;
+    }
+
+    if (typeof amount !== 'number' || isNaN(amount) || amount <= 0) {
+      res.status(400).json({ message: 'Amount must be a positive number.' });
+      return;
+    }
+
+    if (typeof monthCount !== 'number' || isNaN(monthCount) || monthCount < 1) {
+      res
+        .status(400)
+        .json({ message: 'Month count must be a number greater than 0.' });
+      return;
+    }
+
+    if (
+      !startDate ||
+      typeof startDate !== 'string' ||
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(startDate)
+    ) {
+      res
+        .status(400)
+        .json({ message: 'Start date must be in YYYY-MM format.' });
+      return;
+    }
+
+    if (
+      !Array.isArray(monthlyPayments) ||
+      monthlyPayments.length !== monthCount
+    ) {
+      res.status(400).json({
+        message: `Monthly payments must be an array of length ${monthCount}.`,
+      });
+      return;
+    }
+
+    const invalidPayment = monthlyPayments.find(
+      (p) =>
+        !p.date ||
+        typeof p.amount !== 'number' ||
+        p.amount <= 0 ||
+        isNaN(Date.parse(p.date))
+    );
+
+    if (invalidPayment) {
+      res.status(400).json({
+        message: 'Each monthly payment must have a valid date and amount',
+      });
+      return;
+    }
+
+    const total = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
+    if (+total.toFixed(2) !== +amount.toFixed(2)) {
+      res.status(400).json({
+        message: `Sum of monthly payments (${total.toFixed(
+          2
+        )}) must equal total amount (${amount.toFixed(2)})`,
+      });
       return;
     }
 
@@ -18,7 +106,7 @@ export const createInstallment = async (
       title,
       amount,
       monthCount,
-      startMonth,
+      startDate,
       monthlyPayments,
     });
 
@@ -105,7 +193,7 @@ export const updateInstallment = async (
     installment.title = title || installment.title;
     installment.amount = amount || installment.amount;
     installment.monthCount = monthCount || installment.monthCount;
-    installment.startMonth = startMonth || installment.startMonth;
+    installment.startDate = startMonth || installment.startDate;
     installment.monthlyPayments =
       monthlyPayments || installment.monthlyPayments;
 

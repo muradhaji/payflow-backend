@@ -13,7 +13,7 @@ export interface IInstallment extends Document {
   title: string;
   amount: number;
   monthCount: number;
-  startMonth: number;
+  startDate: Date;
   monthlyPayments: IMonthlyPayment[];
   createdAt: Date;
   updatedAt: Date;
@@ -32,7 +32,7 @@ const installmentSchema = new Schema<IInstallment>(
     title: { type: String, required: true },
     amount: { type: Number, required: true },
     monthCount: { type: Number, required: true },
-    startMonth: { type: Number, required: true },
+    startDate: { type: Date, required: true },
     monthlyPayments: [monthlyPaymentSchema],
   },
   { timestamps: true }
