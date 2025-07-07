@@ -1,34 +1,6 @@
 import { Request, Response } from 'express';
 import { Installment } from '../models/installment.model';
 
-// export const createInstallment = async (
-//   req: Request,
-//   res: Response
-// ): Promise<void> => {
-//   try {
-//     const { title, amount, monthCount, startMonth, monthlyPayments } = req.body;
-
-//     if (!title || !amount || !monthCount || !startMonth || !monthlyPayments) {
-//       res.status(400).json({ message: 'All fields are required' });
-//       return;
-//     }
-
-//     const installment = await Installment.create({
-//       user: req.user!._id,
-//       title,
-//       amount,
-//       monthCount,
-//       startMonth,
-//       monthlyPayments,
-//     });
-
-//     res.status(201).json(installment);
-//   } catch (error) {
-//     console.error('Create installment error:', error);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
 export const createInstallment = async (
   req: Request,
   res: Response
@@ -58,11 +30,12 @@ export const createInstallment = async (
     if (
       !startDate ||
       typeof startDate !== 'string' ||
-      !/^\d{4}-(0[1-9]|1[0-2])$/.test(startDate)
+      !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+      isNaN(Date.parse(startDate))
     ) {
       res
         .status(400)
-        .json({ message: 'Start date must be in YYYY-MM format.' });
+        .json({ message: 'Start date must be in YYYY-MM-DD format.' });
       return;
     }
 
@@ -178,7 +151,7 @@ export const updateInstallment = async (
     }
 
     const { id } = req.params;
-    const { title, amount, monthCount, startMonth, monthlyPayments } = req.body;
+    const { title, amount, startDate, monthCount, monthlyPayments } = req.body;
 
     const installment = await Installment.findOne({
       _id: id,
@@ -190,12 +163,24 @@ export const updateInstallment = async (
       return;
     }
 
-    installment.title = title || installment.title;
-    installment.amount = amount || installment.amount;
-    installment.monthCount = monthCount || installment.monthCount;
-    installment.startDate = startMonth || installment.startDate;
+    if (
+      startDate &&
+      (typeof startDate !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+        isNaN(Date.parse(startDate)))
+    ) {
+      res
+        .status(400)
+        .json({ message: 'Start date must be in YYYY-MM-DD format.' });
+      return;
+    }
+
+    installment.title = title ?? installment.title;
+    installment.amount = amount ?? installment.amount;
+    installment.monthCount = monthCount ?? installment.monthCount;
+    installment.startDate = startDate ?? installment.startDate;
     installment.monthlyPayments =
-      monthlyPayments || installment.monthlyPayments;
+      monthlyPayments ?? installment.monthlyPayments;
 
     await installment.save();
 
