@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
-import { Installment } from '../models/installment.model';
+import {
+  IInstallment,
+  Installment,
+  IPaymentUpdate,
+} from '../models/installment.model';
 
 export const createInstallment = async (
   req: Request,
@@ -196,40 +200,55 @@ export const togglePaymentStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { installmentId, monthlyPaymentId } = req.params;
+    const payments = req.body as IPaymentUpdate[];
+
+    if (!Array.isArray(payments) || payments.length === 0) {
+      res.status(400).json({ message: 'No payments provided' });
+      return;
+    }
 
     if (!req.user) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
 
-    const installment = await Installment.findOne({
-      _id: installmentId,
-      user: req.user._id,
+    const responseInstallments: IInstallment[] = [];
+
+    const paymentsByInstallment = payments.reduce((acc, payment) => {
+      if (!acc[payment.installmentId]) {
+        acc[payment.installmentId] = [];
+      }
+      acc[payment.installmentId].push(payment.paymentId);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    for (const [installmentId, paymentIds] of Object.entries(
+      paymentsByInstallment
+    )) {
+      const installment = await Installment.findOne({
+        _id: installmentId,
+        user: req.user._id,
+      });
+
+      if (!installment) continue;
+
+      for (const monthlyPayment of installment.monthlyPayments) {
+        if (paymentIds.includes(monthlyPayment._id?.toString() ?? '')) {
+          monthlyPayment.paid = !monthlyPayment.paid;
+          monthlyPayment.paidDate = monthlyPayment.paid ? new Date() : null;
+        }
+      }
+
+      await installment.save();
+      responseInstallments.push(installment);
+    }
+
+    res.status(200).json({
+      message: 'Payment statuses updated',
+      installments: responseInstallments,
     });
-
-    if (!installment) {
-      res.status(404).json({ message: 'Installment not found' });
-      return;
-    }
-
-    const payment = installment.monthlyPayments.find(
-      (p) => p._id?.toString() === monthlyPaymentId
-    );
-
-    if (!payment) {
-      res.status(404).json({ message: 'Monthly payment not found' });
-      return;
-    }
-
-    payment.paid = !payment.paid;
-    payment.paidDate = payment.paid ? new Date() : null;
-
-    await installment.save();
-
-    res.status(200).json({ message: 'Payment status updated', payment });
   } catch (error) {
-    console.error('Toggle payment status error:', error);
+    console.error('Toggle payments error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

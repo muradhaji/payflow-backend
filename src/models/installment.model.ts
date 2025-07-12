@@ -42,3 +42,8 @@ export const Installment = mongoose.model<IInstallment>(
   'Installment',
   installmentSchema
 );
+
+export interface IPaymentUpdate {
+  installmentId: string;
+  paymentId: string;
+}
