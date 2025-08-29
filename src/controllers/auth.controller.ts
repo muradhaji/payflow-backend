@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/user.model';
 import { generateToken } from '../utils/generateToken';
 
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const signup = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
 
   const userExists = await User.findOne({ username });
