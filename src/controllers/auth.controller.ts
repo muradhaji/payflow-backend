@@ -42,6 +42,11 @@ export const deleteMe = async (req: Request, res: Response): Promise<void> => {
   try {
     const { password } = req.body;
 
+    if (!password) {
+      res.status(400).json({ message: ERROR_MESSAGES.AUTH.PASSWORD_REQUIRED });
+      return;
+    }
+
     const isMatch = await bcrypt.compare(password, req.user!.password);
     if (!isMatch) {
       res.status(401).json({ message: ERROR_MESSAGES.AUTH.PASSWORD_INCORRECT });

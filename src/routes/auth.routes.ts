@@ -26,6 +26,6 @@ router.post(
   validatePassword,
   login
 );
-router.delete('/me', protect, validatePassword, deleteMe);
+router.delete('/me', protect, deleteMe);
 
 export default router;
